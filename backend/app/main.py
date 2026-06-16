@@ -58,6 +58,8 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:5500",
     "http://localhost:8080",
     "null",  # file:// for local dev
+    # Production — GitHub Pages
+    "https://ninjaraiser81.github.io",
 ]
 
 app.add_middleware(
