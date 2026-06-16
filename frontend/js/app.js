@@ -17,7 +17,7 @@
 const CONFIG = Object.freeze({
   API_BASE: window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
     ? "http://localhost:8000/api/v1" 
-    : "https://eco-track-backend.onrender.com/api/v1", // Update this after Render deployment
+    : "https://carbon-footprint-awareness-platform-ne60.onrender.com", // Update this after Render deployment
   TOKEN_KEY: "eco_token",
   USER_KEY: "eco_user",
   DEMO_USER: { username: "demouser", password: "DemoPass1" },
