@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Track, understand, and reduce your personal carbon footprint with personalized insights, gamified challenges, and science-backed emission data." />
+  <meta name="theme-color" content="#0f1a0f" />
+  <title>🌿 EcoTrack — Carbon Footprint Tracker</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       AUTH OVERLAY
+  ══════════════════════════════════════════════════════════════════════ -->
+  <div id="auth-overlay" class="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div class="auth-card glass-card">
+      <div class="auth-logo">
+        <span class="logo-leaf" aria-hidden="true">🌿</span>
+        <h1 id="auth-title" class="logo-text">EcoTrack</h1>
+        <p class="logo-sub">Your personal carbon journey</p>
+      </div>
+
+      <!-- Tab switcher -->
+      <div class="auth-tabs" role="tablist">
+        <button id="tab-login" class="auth-tab active" role="tab" aria-selected="true" aria-controls="panel-login" onclick="switchAuthTab('login')">Sign In</button>
+        <button id="tab-register" class="auth-tab" role="tab" aria-selected="false" aria-controls="panel-register" onclick="switchAuthTab('register')">Register</button>
+      </div>
+
+      <!-- Login Panel -->
+      <div id="panel-login" class="auth-panel" role="tabpanel" aria-labelledby="tab-login">
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input id="login-username" type="text" autocomplete="username" placeholder="Enter username" required aria-required="true" />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input id="login-password" type="password" autocomplete="current-password" placeholder="Enter password" required aria-required="true" />
+          </div>
+          <div id="login-error" class="error-msg" role="alert" aria-live="polite"></div>
+          <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+            <span>Sign In</span>
+            <i data-lucide="arrow-right" aria-hidden="true"></i>
+          </button>
+        </form>
+        <p class="auth-demo">Demo: <strong>demouser</strong> / <strong>DemoPass1</strong></p>
+      </div>
+
+      <!-- Register Panel -->
+      <div id="panel-register" class="auth-panel hidden" role="tabpanel" aria-labelledby="tab-register">
+        <form id="register-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reg-username">Username</label>
+              <input id="reg-username" type="text" autocomplete="username" placeholder="johndoe" required minlength="3" aria-required="true" />
+            </div>
+            <div class="form-group">
+              <label for="reg-fullname">Full Name</label>
+              <input id="reg-fullname" type="text" autocomplete="name" placeholder="John Doe" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Email</label>
+            <input id="reg-email" type="email" autocomplete="email" placeholder="john@example.com" required aria-required="true" />
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Password <span class="hint">(8+ chars, 1 uppercase, 1 digit)</span></label>
+            <input id="reg-password" type="password" autocomplete="new-password" placeholder="SecurePass1" required minlength="8" aria-required="true" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reg-country">Country</label>
+              <select id="reg-country" aria-label="Select your country">
+                <option value="Global">🌍 Global</option>
+                <option value="United States">🇺🇸 United States</option>
+                <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                <option value="Germany">🇩🇪 Germany</option>
+                <option value="France">🇫🇷 France</option>
+                <option value="India">🇮🇳 India</option>
+                <option value="China">🇨🇳 China</option>
+                <option value="Australia">🇦🇺 Australia</option>
+                <option value="Canada">🇨🇦 Canada</option>
+                <option value="Brazil">🇧🇷 Brazil</option>
+                <option value="Japan">🇯🇵 Japan</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="reg-goal">Annual Goal (kg CO₂e)</label>
+              <input id="reg-goal" type="number" value="2000" min="100" max="50000" aria-describedby="goal-hint" />
+              <small id="goal-hint" class="field-hint">Global avg: 4000 kg/year</small>
+            </div>
+          </div>
+          <div id="register-error" class="error-msg" role="alert" aria-live="polite"></div>
+          <button type="submit" class="btn btn-primary btn-full" id="register-btn">
+            <span>Create Account</span>
+            <i data-lucide="user-plus" aria-hidden="true"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       MAIN APP
+  ══════════════════════════════════════════════════════════════════════ -->
+  <div id="app" class="app hidden" role="application">
+
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation">
+      <div class="sidebar-header">
+        <span class="logo-leaf" aria-hidden="true">🌿</span>
+        <span class="sidebar-logo-text">EcoTrack</span>
+      </div>
+      <ul class="nav-list" role="list">
+        <li>
+          <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')" aria-current="page">
+            <i data-lucide="layout-dashboard" aria-hidden="true"></i>
+            <span>Dashboard</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item" data-page="log" onclick="navigateTo('log')">
+            <i data-lucide="plus-circle" aria-hidden="true"></i>
+            <span>Log Activity</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item" data-page="insights" onclick="navigateTo('insights')">
+            <i data-lucide="sparkles" aria-hidden="true"></i>
+            <span>Insights</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item" data-page="history" onclick="navigateTo('history')">
+            <i data-lucide="history" aria-hidden="true"></i>
+            <span>History</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item" data-page="badges" onclick="navigateTo('badges')">
+            <i data-lucide="award" aria-hidden="true"></i>
+            <span>Badges</span>
+          </button>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-pill" id="user-pill">
+          <div class="user-avatar" id="user-avatar" aria-hidden="true">?</div>
+          <div class="user-info">
+            <span class="user-name" id="sidebar-username">Loading…</span>
+            <span class="user-sub">Member</span>
+          </div>
+        </div>
+        <button class="btn-icon logout-btn" onclick="logout()" aria-label="Logout" title="Logout">
+          <i data-lucide="log-out" aria-hidden="true"></i>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile top bar -->
+    <header class="mobile-header" role="banner">
+      <button class="btn-icon" id="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <i data-lucide="menu" aria-hidden="true"></i>
+      </button>
+      <span class="mobile-logo">🌿 EcoTrack</span>
+      <button class="btn-icon logout-btn" onclick="logout()" aria-label="Logout">
+        <i data-lucide="log-out" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content" role="main">
+
+      <!-- ── DASHBOARD PAGE ─────────────────────────────────────────── -->
+      <section id="page-dashboard" class="page active" aria-labelledby="dash-heading">
+        <div class="page-header">
+          <div>
+            <h2 id="dash-heading" class="page-title">Your Carbon Dashboard</h2>
+            <p class="page-sub" id="dash-greeting">Welcome back!</p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-secondary" onclick="refreshDashboard()" aria-label="Refresh dashboard data">
+              <i data-lucide="refresh-cw" aria-hidden="true"></i>
+              <span>Refresh</span>
+            </button>
+            <button class="btn btn-primary" onclick="navigateTo('log')">
+              <i data-lucide="plus" aria-hidden="true"></i>
+              <span>Log Activity</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid" role="list">
+          <article class="kpi-card glass-card" role="listitem">
+            <div class="kpi-icon green" aria-hidden="true"><i data-lucide="zap"></i></div>
+            <div class="kpi-body">
+              <span class="kpi-label">Eco Score</span>
+              <span class="kpi-value" id="kpi-score" aria-live="polite">—</span>
+              <span class="kpi-sub" id="kpi-score-label">Loading…</span>
+            </div>
+          </article>
+          <article class="kpi-card glass-card" role="listitem">
+            <div class="kpi-icon blue" aria-hidden="true"><i data-lucide="cloud"></i></div>
+            <div class="kpi-body">
+              <span class="kpi-label">This Month</span>
+              <span class="kpi-value" id="kpi-month" aria-live="polite">—</span>
+              <span class="kpi-sub">kg CO₂e</span>
+            </div>
+          </article>
+          <article class="kpi-card glass-card" role="listitem">
+            <div class="kpi-icon orange" aria-hidden="true"><i data-lucide="flame"></i></div>
+            <div class="kpi-body">
+              <span class="kpi-label">Streak</span>
+              <span class="kpi-value" id="kpi-streak" aria-live="polite">—</span>
+              <span class="kpi-sub">days logged</span>
+            </div>
+          </article>
+          <article class="kpi-card glass-card" role="listitem">
+            <div class="kpi-icon purple" aria-hidden="true"><i data-lucide="target"></i></div>
+            <div class="kpi-body">
+              <span class="kpi-label">Annual Goal</span>
+              <span class="kpi-value" id="kpi-goal" aria-live="polite">—</span>
+              <span class="kpi-sub">% used</span>
+            </div>
+          </article>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-grid">
+          <div class="chart-card glass-card">
+            <h3 class="chart-title">📈 30-Day Trend</h3>
+            <div class="chart-wrapper" role="img" aria-label="Daily CO2e emissions over the past 30 days">
+              <canvas id="trend-chart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card glass-card">
+            <h3 class="chart-title">🍰 By Category</h3>
+            <div class="chart-wrapper" role="img" aria-label="CO2e emissions broken down by category">
+              <canvas id="category-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparison + Tip Row -->
+        <div class="info-grid">
+          <div class="comparison-card glass-card">
+            <h3 class="chart-title">🌍 How You Compare</h3>
+            <div id="comparison-bars" class="comparison-bars"></div>
+          </div>
+          <div class="tip-card glass-card" id="tip-card">
+            <div class="tip-header">
+              <span class="tip-icon" aria-hidden="true">💡</span>
+              <h3 class="chart-title">Tip of the Day</h3>
+            </div>
+            <p class="tip-text" id="tip-text">Loading your personalised tip…</p>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="glass-card recent-section">
+          <div class="section-header">
+            <h3 class="chart-title">⚡ Recent Activities</h3>
+            <button class="btn btn-ghost" onclick="navigateTo('history')">View all</button>
+          </div>
+          <div id="recent-activities" class="activity-list" role="list" aria-label="Recent carbon activities">
+            <div class="loading-shimmer"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── LOG ACTIVITY PAGE ──────────────────────────────────────── -->
+      <section id="page-log" class="page hidden" aria-labelledby="log-heading">
+        <div class="page-header">
+          <div>
+            <h2 id="log-heading" class="page-title">Log Activity</h2>
+            <p class="page-sub">Add a new carbon-emitting activity</p>
+          </div>
+        </div>
+
+        <div class="log-layout">
+          <div class="glass-card log-form-card">
+            <form id="activity-form" novalidate>
+              <!-- Step 1: Category -->
+              <div class="form-section">
+                <h3 class="form-section-title">1. Choose Category</h3>
+                <div class="category-grid" role="group" aria-label="Activity category">
+                  <button type="button" class="cat-btn active" data-cat="transport" onclick="selectCategory('transport')" aria-pressed="true">
+                    <span class="cat-icon" aria-hidden="true">🚗</span>
+                    <span>Transport</span>
+                  </button>
+                  <button type="button" class="cat-btn" data-cat="energy" onclick="selectCategory('energy')" aria-pressed="false">
+                    <span class="cat-icon" aria-hidden="true">⚡</span>
+                    <span>Energy</span>
+                  </button>
+                  <button type="button" class="cat-btn" data-cat="food" onclick="selectCategory('food')" aria-pressed="false">
+                    <span class="cat-icon" aria-hidden="true">🍽️</span>
+                    <span>Food</span>
+                  </button>
+                  <button type="button" class="cat-btn" data-cat="shopping" onclick="selectCategory('shopping')" aria-pressed="false">
+                    <span class="cat-icon" aria-hidden="true">🛍️</span>
+                    <span>Shopping</span>
+                  </button>
+                  <button type="button" class="cat-btn" data-cat="travel" onclick="selectCategory('travel')" aria-pressed="false">
+                    <span class="cat-icon" aria-hidden="true">✈️</span>
+                    <span>Travel</span>
+                  </button>
+                  <button type="button" class="cat-btn" data-cat="waste" onclick="selectCategory('waste')" aria-pressed="false">
+                    <span class="cat-icon" aria-hidden="true">♻️</span>
+                    <span>Waste</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Step 2: Subcategory -->
+              <div class="form-section">
+                <h3 class="form-section-title">2. Specify Activity</h3>
+                <div class="form-group">
+                  <label for="act-subcategory">Activity Type</label>
+                  <select id="act-subcategory" required aria-required="true" aria-label="Select specific activity type">
+                    <option value="">Select an activity…</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="act-quantity">Quantity</label>
+                    <input id="act-quantity" type="number" min="0.01" step="0.01" placeholder="e.g. 25" required aria-required="true" />
+                  </div>
+                  <div class="form-group">
+                    <label for="act-unit">Unit</label>
+                    <input id="act-unit" type="text" placeholder="km / kg / kWh…" readonly aria-label="Unit (auto-filled)" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="act-date">Date</label>
+                  <input id="act-date" type="date" required aria-required="true" />
+                </div>
+                <div class="form-group">
+                  <label for="act-description">Notes <span class="optional">(optional)</span></label>
+                  <input id="act-description" type="text" maxlength="500" placeholder="e.g. Morning commute to office" />
+                </div>
+              </div>
+
+              <!-- Live CO2 Preview -->
+              <div class="co2-preview glass-card" id="co2-preview" aria-live="polite" aria-atomic="true">
+                <span class="preview-label">Estimated Emission</span>
+                <span class="preview-value" id="preview-value">—</span>
+                <span class="preview-unit">kg CO₂e</span>
+              </div>
+
+              <div id="log-error" class="error-msg" role="alert" aria-live="polite"></div>
+              <div id="log-success" class="success-msg" role="status" aria-live="polite"></div>
+              <button type="submit" class="btn btn-primary btn-full" id="log-btn">
+                <i data-lucide="save" aria-hidden="true"></i>
+                <span>Log Activity</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Quick reference -->
+          <div class="glass-card quick-ref">
+            <h3 class="chart-title">📊 Quick Reference</h3>
+            <div class="ref-list" id="quick-ref-list">
+              <p class="muted">Select a category to see emission factors</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── INSIGHTS PAGE ──────────────────────────────────────────── -->
+      <section id="page-insights" class="page hidden" aria-labelledby="insights-heading">
+        <div class="page-header">
+          <div>
+            <h2 id="insights-heading" class="page-title">Personalized Insights</h2>
+            <p class="page-sub">AI-powered recommendations to reduce your footprint</p>
+          </div>
+        </div>
+
+        <!-- Eco Score Banner -->
+        <div class="eco-banner glass-card" id="eco-banner">
+          <div class="eco-gauge-wrap">
+            <canvas id="eco-gauge" width="180" height="180" aria-label="Eco score gauge"></canvas>
+            <div class="eco-gauge-center">
+              <span class="eco-score-num" id="eco-score-num">—</span>
+              <span class="eco-score-sub">/ 100</span>
+            </div>
+          </div>
+          <div class="eco-info">
+            <h3 class="eco-title" id="eco-label">Loading…</h3>
+            <p class="eco-desc">Based on your emissions this month compared to global averages and scientific targets.</p>
+            <div class="eco-comparisons" id="eco-comparisons"></div>
+          </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="recs-section">
+          <h3 class="section-heading">🎯 Top Recommendations</h3>
+          <div class="recs-grid" id="recs-grid" role="list" aria-label="Carbon reduction recommendations">
+            <div class="loading-shimmer"></div>
+          </div>
+        </div>
+
+        <!-- Monthly Trend -->
+        <div class="glass-card trend-section">
+          <h3 class="chart-title">📅 Month-over-Month</h3>
+          <div id="monthly-comparison" class="monthly-comparison"></div>
+        </div>
+      </section>
+
+      <!-- ── HISTORY PAGE ────────────────────────────────────────────── -->
+      <section id="page-history" class="page hidden" aria-labelledby="history-heading">
+        <div class="page-header">
+          <div>
+            <h2 id="history-heading" class="page-title">Activity History</h2>
+            <p class="page-sub">All your logged activities</p>
+          </div>
+        </div>
+        <!-- Filters -->
+        <div class="filters-bar glass-card">
+          <select id="filter-category" onchange="filterHistory()" aria-label="Filter by category">
+            <option value="">All Categories</option>
+            <option value="transport">🚗 Transport</option>
+            <option value="energy">⚡ Energy</option>
+            <option value="food">🍽️ Food</option>
+            <option value="shopping">🛍️ Shopping</option>
+            <option value="travel">✈️ Travel</option>
+            <option value="waste">♻️ Waste</option>
+          </select>
+          <input type="date" id="filter-start" onchange="filterHistory()" aria-label="Filter start date" />
+          <input type="date" id="filter-end" onchange="filterHistory()" aria-label="Filter end date" />
+          <button class="btn btn-ghost" onclick="clearFilters()">Clear Filters</button>
+        </div>
+        <div id="history-list" class="activity-list glass-card" role="list" aria-label="Activity history"></div>
+        <div class="pagination" id="pagination">
+          <button class="btn btn-ghost" id="prev-page" onclick="changePage(-1)" aria-label="Previous page">← Prev</button>
+          <span id="page-info" aria-live="polite">Page 1</span>
+          <button class="btn btn-ghost" id="next-page" onclick="changePage(1)" aria-label="Next page">Next →</button>
+        </div>
+      </section>
+
+      <!-- ── BADGES PAGE ────────────────────────────────────────────── -->
+      <section id="page-badges" class="page hidden" aria-labelledby="badges-heading">
+        <div class="page-header">
+          <div>
+            <h2 id="badges-heading" class="page-title">Achievements</h2>
+            <p class="page-sub">Your eco milestones and badges</p>
+          </div>
+        </div>
+        <div id="badges-grid" class="badges-grid" role="list" aria-label="Earned badges">
+          <div class="loading-shimmer"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div id="delete-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal-card glass-card">
+      <h3 id="delete-modal-title">Delete Activity?</h3>
+      <p>This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn btn-danger" id="confirm-delete-btn" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
