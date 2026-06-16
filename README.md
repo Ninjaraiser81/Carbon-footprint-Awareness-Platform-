@@ -22,8 +22,10 @@ pip install -r requirements.txt
 # Run the server
 uvicorn app.main:app --reload --port 8000
 ```
+🌍 Website: https://ninjaraiser81.github.io/Carbon-footprint-Awareness-Platform-/
+🔗 GitHub Repo: https://github.com/Ninjaraiser81/Carbon-footprint-Awareness-Platform-
+⚙️ Backend API Docs: https://carbon-footprint-awareness-platform-ne60.onrender.com/docs
 
-API docs available at: http://localhost:8000/docs
 
 ### 2. Frontend
 
